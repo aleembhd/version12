@@ -376,24 +376,32 @@
             }
 
             function deleteRecord(phoneNumber) {
-                // Get a reference to the Firebase database
                 const database = firebase.database();
                 
-                // Find the record with the matching phone number
                 database.ref('calls').orderByChild('number').equalTo(phoneNumber).once('value', snapshot => {
                     snapshot.forEach(childSnapshot => {
-                        // Remove the record from Firebase
                         childSnapshot.ref.remove()
                             .then(() => {
                                 console.log(`Record for ${phoneNumber} deleted successfully`);
-                                // Refresh the call details
-                                showCallDetails('Interested');
+                                // Update the UI immediately after successful deletion
+                                updateUIAfterDeletion(phoneNumber);
                             })
                             .catch(error => {
                                 console.error('Error deleting record:', error);
                             });
                     });
                 });
+            }
+
+            function updateUIAfterDeletion(phoneNumber) {
+                // Remove the deleted call from the window.todayCalls array
+                window.todayCalls = window.todayCalls.filter(call => call.number !== phoneNumber);
+
+                // Update the summary numbers
+                updateSummaryNumbers(window.todayCalls);
+
+                // Refresh the call details view
+                showCallDetails('Interested');
             }
 
             // Function to update summary numbers
