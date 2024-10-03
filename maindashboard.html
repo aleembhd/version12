@@ -275,14 +275,54 @@
                     childSnapshot.ref.remove()
                         .then(() => {
                             console.log(`Record for ${phoneNumber} deleted successfully`);
-                            // Refresh the call details
+                            // Remove the record from the local callData array
+                            callData.details = callData.details.filter(call => call.number !== phoneNumber);
+                            // Refresh the call details without reloading the page
                             showCallDetails('Interested');
+                            // Update the call summary
+                            updateCallSummary();
                         })
                         .catch(error => {
                             console.error('Error deleting record:', error);
                         });
                 });
             });
+        }
+
+        function updateCallSummary() {
+            const summary = {
+                total: 0,
+                interested: 0,
+                notInterested: 0,
+                callback: 0,
+                unanswered: 0
+            };
+
+            callData.details.forEach(call => {
+                summary.total++;
+                switch (call.status) {
+                    case 'Interested':
+                        summary.interested++;
+                        break;
+                    case 'Not Interested':
+                        summary.notInterested++;
+                        break;
+                    case 'Callback':
+                        summary.callback++;
+                        break;
+                    case 'Unanswered':
+                    case 'Not Lift':
+                        summary.unanswered++;
+                        break;
+                }
+            });
+
+            // Update the UI with new summary
+            document.getElementById('totalCallsSummary').textContent = summary.total;
+            document.getElementById('interestedCallsSummary').textContent = summary.interested;
+            document.getElementById('notInterestedCallsSummary').textContent = summary.notInterested;
+            document.getElementById('callBackCallsSummary').textContent = summary.callback;
+            document.getElementById('unansweredCallsSummary').textContent = summary.unanswered;
         }
 
         // Wrap the event listener setup in a DOMContentLoaded event
