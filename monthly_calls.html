@@ -366,6 +366,9 @@
                     const dustbinIcon = showDustbin ? 
                         `<img src="images/dustbin.png" alt="Delete" class="dustbin-icon" data-number="${phoneNumber}">` : '';
 
+                    // Add data-number attribute to the row
+                    row.setAttribute('data-number', phoneNumber);
+
                     row.innerHTML = `
                         <td>${dustbinIcon}${call.number}</td>
                         <td><span style="${statusStyles[call.status]}">${call.status}</span></td>
@@ -430,24 +433,49 @@
             }
 
             function deleteRecord(phoneNumber) {
-                // Get a reference to the Firebase database
                 const database = firebase.database();
                 
-                // Find the record with the matching phone number
                 database.ref('calls').orderByChild('number').equalTo(phoneNumber).once('value', snapshot => {
                     snapshot.forEach(childSnapshot => {
-                        // Remove the record from Firebase
                         childSnapshot.ref.remove()
                             .then(() => {
                                 console.log(`Record for ${phoneNumber} deleted successfully`);
-                                // Refresh the call details
-                                fetchMonthlyData(); // Assuming this function fetches and displays the updated data
+                                // Update the UI immediately after successful deletion
+                                updateUIAfterDeletion(phoneNumber);
                             })
                             .catch(error => {
                                 console.error('Error deleting record:', error);
                             });
                     });
                 });
+            }
+
+            function updateUIAfterDeletion(phoneNumber) {
+                // Remove the deleted row from the table
+                const row = document.querySelector(`tr[data-number="${phoneNumber}"]`);
+                if (row) {
+                    row.remove();
+                }
+
+                // Update the summary numbers
+                const interestedCallsSummary = document.getElementById('interestedCallsSummary');
+                const totalCallsSummary = document.getElementById('totalCallsSummary');
+                
+                if (interestedCallsSummary) {
+                    let currentCount = parseInt(interestedCallsSummary.textContent);
+                    interestedCallsSummary.textContent = (currentCount - 1).toString();
+                }
+                
+                if (totalCallsSummary) {
+                    let currentTotal = parseInt(totalCallsSummary.textContent);
+                    totalCallsSummary.textContent = (currentTotal - 1).toString();
+                }
+
+                // Update the cached data
+                const currentMonth = new Date().getMonth() + 1;
+                if (cachedData[currentMonth]) {
+                    cachedData[currentMonth] = cachedData[currentMonth].filter(call => call.number !== phoneNumber);
+                }
             }
 
             function clearCallDetails(status) {
