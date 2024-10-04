@@ -32,55 +32,6 @@
             background-color: #dc3545;
             color: white;
         }
-
-        /* Add this to your existing styles */
-        .dustbin-icon {
-            transition: transform 0.2s ease-in-out;
-        }
-        .dustbin-icon:hover {
-            transform: scale(1.2);
-        }
-
-        /* Add or update these styles */
-        .card-footer {
-            padding: 15px;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px; /* Add some space between buttons */
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-
-        #printBtn {
-            background-color: #007bff;
-            color: white;
-        }
-
-        #printBtn:hover {
-            background-color: #0056b3;
-        }
-
-        #clearAllBtn {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        #clearAllBtn:hover {
-            background-color: #c82333;
-        }
     </style>
 </head>
 <body>
@@ -125,7 +76,7 @@
                     </div>
                 </div>
             </div>
-            <!-- <button class="btn btn-danger" id="clearDataBtn">Clear All Data</button> -->
+            <button class="btn btn-danger" id="clearDataBtn">Clear All Data</button>
         </div>
 
         <div class="card call-details-card" id="callDetailsCard" style="display: none;">
@@ -151,14 +102,15 @@
             </div>
             <div class="card-footer">
                 <div class="button-container">
-                    <button id="printBtn" class="btn action-btn">Print</button>
-                    <button id="clearAllBtn" class="btn action-btn">Clear </button>
+                    <button id="printBtn" class="btn btn-primary action-btn">Print</button>
                 </div>
             </div>
         </div>
     </div>
 
-    
+    <div class="floating-image" id="dialpadTrigger">
+        <img src="images/telephone.png" alt="Floating Image">
+    </div>
 
     <script src="script.js"></script>
     <script src="dialpad.js"></script>
@@ -197,15 +149,11 @@
                     'Not Interested': 'background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 12px;',
                     'Callback': 'background-color: #007bff; color: white; padding: 3px 8px; border-radius: 12px;',
                     'Unanswered': 'background-color: #ffc107; color: black; padding: 3px 8px; border-radius: 12px;',
-                    'Not Lift': 'background-color: #6c757d; color: white; padding: 3px 8px; border-radius: 12px;'
+                    'Not Lift': 'background-color: #6c757d; color: white; padding: 3px 8px; border-radius: 12px;' // New status style
                 };
                 
-                // Add dustbin icon only for Interested calls when viewing Interested Call Details
-                const dustbinIcon = (status === 'Interested' && call.status === 'Interested') ? 
-                    `<img src="images/dustbin.png" alt="Delete" class="dustbin-icon" data-number="${phoneNumber}" style="width: 24px; height: 24px; cursor: pointer; margin-right: 5px; vertical-align: middle;">` : '';
-
                 row.innerHTML = `
-                    <td>${dustbinIcon}${call.number}</td>
+                    <td>${call.number}</td>
                     <td><span style="${statusStyles[call.status]}">${call.status}</span></td>
                     <td>${call.duration || 'N/A'}</td>
                     <td>${date}</td>
@@ -243,86 +191,6 @@
                     window.open(`tel:${phoneNumber}`, '_self');
                 });
             });
-
-            // Add event listeners for dustbin icons
-            const dustbinIcons = document.querySelectorAll('.dustbin-icon');
-            dustbinIcons.forEach(icon => {
-                icon.addEventListener('click', function() {
-                    const phoneNumber = this.getAttribute('data-number');
-                    if (confirm(`Are you sure you want to delete the record for ${phoneNumber}?`)) {
-                        deleteRecord(phoneNumber);
-                    }
-                });
-            });
-
-            const clearAllBtn = document.getElementById('clearAllBtn');
-            if (status !== 'Interested') {
-                clearAllBtn.style.display = 'inline-block';
-                clearAllBtn.setAttribute('data-status', status);
-            } else {
-                clearAllBtn.style.display = 'none';
-            }
-        }
-
-        function deleteRecord(phoneNumber) {
-            // Get a reference to the Firebase database
-            const database = firebase.database();
-            
-            // Find the record with the matching phone number
-            database.ref('calls').orderByChild('number').equalTo(phoneNumber).once('value', snapshot => {
-                snapshot.forEach(childSnapshot => {
-                    // Remove the record from Firebase
-                    childSnapshot.ref.remove()
-                        .then(() => {
-                            console.log(`Record for ${phoneNumber} deleted successfully`);
-                            // Remove the record from the local callData array
-                            callData.details = callData.details.filter(call => call.number !== phoneNumber);
-                            // Refresh the call details without reloading the page
-                            showCallDetails('Interested');
-                            // Update the call summary
-                            updateCallSummary();
-                        })
-                        .catch(error => {
-                            console.error('Error deleting record:', error);
-                        });
-                });
-            });
-        }
-
-        function updateCallSummary() {
-            const summary = {
-                total: 0,
-                interested: 0,
-                notInterested: 0,
-                callback: 0,
-                unanswered: 0
-            };
-
-            callData.details.forEach(call => {
-                summary.total++;
-                switch (call.status) {
-                    case 'Interested':
-                        summary.interested++;
-                        break;
-                    case 'Not Interested':
-                        summary.notInterested++;
-                        break;
-                    case 'Callback':
-                        summary.callback++;
-                        break;
-                    case 'Unanswered':
-                    case 'Not Lift':
-                        summary.unanswered++;
-                        break;
-                }
-            });
-
-            // Update the UI with new summary
-            document.getElementById('totalCallsSummary').textContent = summary.total;
-            document.getElementById('interestedCallsSummary').textContent = summary.interested;
-            document.getElementById('notInterestedCallsSummary').textContent = summary.notInterested;
-            document.getElementById('callBackCallsSummary').textContent = summary.callback;
-            document.getElementById('unansweredCallsSummary').textContent = summary.unanswered;
         }
 
         // Wrap the event listener setup in a DOMContentLoaded event
@@ -381,16 +249,6 @@
 
             if (printBtn) {
                 printBtn.addEventListener('click', printDashboard);
-            }
-
-            const clearAllBtn = document.getElementById('clearAllBtn');
-            if (clearAllBtn) {
-                clearAllBtn.addEventListener('click', function() {
-                    const status = this.getAttribute('data-status');
-                    if (confirm(`Are you sure you want to clear all ${status} call details? This action cannot be undone.`)) {
-                        clearCallDetails(status);
-                    }
-                });
             }
         });
 
@@ -484,49 +342,6 @@
             printWindow.document.close();
         }
 
-        function clearCallDetails(status) {
-            const database = firebase.database();
-            const callsRef = database.ref('calls');
-
-            if (status === 'Total') {
-                // Clear all call details except Interested
-                callsRef.orderByChild('status').once('value', snapshot => {
-                    const updates = {};
-                    snapshot.forEach(childSnapshot => {
-                        if (childSnapshot.val().status !== 'Interested') {
-                            updates[childSnapshot.key] = null;
-                        }
-                    });
-                    callsRef.update(updates)
-                        .then(() => {
-                            console.log('All non-Interested call details have been cleared.');
-                            location.reload();
-                        })
-                        .catch((error) => {
-                            console.error('Error clearing non-Interested call details:', error);
-                            alert('An error occurred while clearing data. Please try again.');
-                        });
-                });
-            } else {
-                // Clear specific status call details
-                callsRef.orderByChild('status').equalTo(status).once('value', snapshot => {
-                    const updates = {};
-                    snapshot.forEach(childSnapshot => {
-                        updates[childSnapshot.key] = null;
-                    });
-                    callsRef.update(updates)
-                        .then(() => {
-                            console.log(`All ${status} call details have been cleared.`);
-                            showCallDetails(status); // Refresh the current view
-                        })
-                        .catch((error) => {
-                            console.error(`Error clearing ${status} call details:`, error);
-                            alert('An error occurred while clearing data. Please try again.');
-                        });
-                });
-            }
-        }
-
         window.addEventListener('message', function(event) {
             if (event.data.type === 'callUpdated') {
                 const updatedCall = event.data.call;
@@ -560,46 +375,6 @@
             // Implementation to update the call summary numbers in the UI
             // This function should recalculate and update the totals for each category
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const totalCallsCard = document.getElementById('totalCallsCard');
-            const notInterestedCard = document.querySelector('.notinterestedcard');
-            const unansweredCard = document.querySelector('.unanswredcalls');
-            const callbackCard = document.getElementById('callbackCard');
-            const interestedCard = document.getElementById('interestedCard');
-            const callDetailsCard = document.getElementById('callDetailsCard');
-
-            function toggleCallDetails(status) {
-                if (callDetailsCard.style.display === 'none' || callDetailsCard.getAttribute('data-status') !== status) {
-                    showCallDetails(status);
-                    callDetailsCard.style.display = 'block';
-                    callDetailsCard.setAttribute('data-status', status);
-                } else {
-                    callDetailsCard.style.display = 'none';
-                    callDetailsCard.setAttribute('data-status', '');
-                }
-            }
-
-            totalCallsCard.addEventListener('click', () => toggleCallDetails('Total'));
-            notInterestedCard.addEventListener('click', () => toggleCallDetails('Not Interested'));
-            unansweredCard.addEventListener('click', () => toggleCallDetails('Unanswered'));
-            callbackCard.addEventListener('click', () => toggleCallDetails('Callback'));
-            interestedCard.addEventListener('click', () => toggleCallDetails('Interested'));
-
-            // ... (keep the existing event listeners and functions)
-        });
-
-        // Update the showCallDetails function
-        function showCallDetails(status) {
-            // ... (keep the existing code)
-
-            document.querySelector('.call-details-card h2').textContent = `${status} Call Details`;
-            callDetailsCard.setAttribute('data-status', status);
-
-            // ... (keep the rest of the existing code)
-        }
-
-        // ... (keep all other existing functions)
     </script>
 </body>
 </html>
