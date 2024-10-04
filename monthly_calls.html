@@ -208,16 +208,12 @@
 
             // Function to fetch and display data for the given month
             function fetchAndDisplayMonthData(month, year) {
+                console.log(`Fetching data for month: ${month}, year: ${year}`);
                 // Show loading indicator
                 document.getElementById('currentMonth').textContent = 'Loading...';
 
-                if (cachedData[`${year}-${month}`]) {
-                    updateDashboard(cachedData[`${year}-${month}`], month, year);
-                    return;
-                }
-
                 const startDate = new Date(year, month - 1, 1).getTime();
-                const endDate = new Date(year, month, 0).getTime();
+                const endDate = new Date(year, month, 0, 23, 59, 59, 999).getTime();
 
                 database.ref('calls')
                     .orderByChild('timestamp')
@@ -231,6 +227,7 @@
                         });
                         
                         cachedData[`${year}-${month}`] = monthData;
+                        console.log(`Data fetched for ${month}/${year}:`, monthData);
                         updateDashboard(monthData, month, year);
                     })
                     .catch((error) => {
@@ -239,28 +236,32 @@
                     });
             }
 
-            // Fetch current month's data on page load
-            fetchAndDisplayMonthData(currentMonth, currentYear);
-
-            // Update active button for current month
-            const currentMonthButton = document.querySelector(`.month-btn[data-month="${currentMonth}"]`);
-            if (currentMonthButton) {
-                currentMonthButton.classList.add('active');
+            // Function to update active button
+            function updateActiveButton(month) {
+                monthButtons.forEach(btn => btn.classList.remove('active'));
+                const activeButton = document.querySelector(`.month-btn[data-month="${month}"]`);
+                if (activeButton) {
+                    activeButton.classList.add('active');
+                }
             }
+
+            // Fetch current month's data and update active button on page load
+            console.log('Page loaded. Fetching current month data.');
+            fetchAndDisplayMonthData(currentMonth, currentYear);
+            updateActiveButton(currentMonth);
 
             // Add click event listeners to month buttons
             monthButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const selectedMonth = parseInt(button.dataset.month);
+                    console.log(`Month button clicked: ${selectedMonth}`);
                     fetchAndDisplayMonthData(selectedMonth, currentYear);
-                    
-                    // Update active button
-                    monthButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
+                    updateActiveButton(selectedMonth);
                 });
             });
 
             function updateDashboard(data, month, year) {
+                console.log(`Updating dashboard for ${month}/${year} with ${data.length} records`);
                 const monthNames = ["January", "February", "March", "April", "May", "June",
                                     "July", "August", "September", "October", "November", "December"];
 
@@ -273,8 +274,8 @@
                 document.getElementById('callBackCallsSummary').textContent = data.filter(call => call.status === 'Callback').length || '0';
                 document.getElementById('interestedCallsSummary').textContent = data.filter(call => call.status === 'Interested').length || '0';
 
-                // Update call details
-                updateCallDetails(data);
+                // Hide call details card by default
+                document.getElementById('callDetailsCard').style.display = 'none';
             }
 
             function updateCallDetails(data) {
@@ -322,7 +323,7 @@
             addClickListener('notInterestedCallsSummary', 'Not Interested');
             addClickListener('unansweredCallsSummary', 'Unanswered');
             addClickListener('callBackCallsSummary', 'Callback');
-            addClickListener('interestedCard', 'Interested');
+            addClickListener('interestedCallsSummary', 'Interested');
 
             // Function to toggle call details
             function toggleCallDetails(status) {
@@ -332,6 +333,37 @@
                 } else {
                     callDetailsCard.style.display = 'none';
                 }
+            }
+
+            // Function to show call details
+            function showCallDetails(status) {
+                const callDetailsBody = document.getElementById('callDetailsBody');
+                callDetailsBody.innerHTML = '';
+
+                let filteredCalls = cachedData[`${currentYear}-${currentMonth}`] || [];
+                if (status !== 'Total') {
+                    filteredCalls = filteredCalls.filter(call => call.status === status);
+                }
+
+                filteredCalls.forEach(call => {
+                    const row = document.createElement('tr');
+                    const callDate = new Date(call.timestamp);
+                    const date = callDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                    const time = callDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    row.innerHTML = `
+                        <td>${call.number}</td>
+                        <td>${call.status}</td>
+                        <td>${call.duration || 'N/A'}</td>
+                        <td>${date}</td>
+                        <td>${time}</td>
+                    `;
+                    callDetailsBody.appendChild(row);
+                });
+
+                const callDetailsCard = document.getElementById('callDetailsCard');
+                callDetailsCard.style.display = 'block';
+                callDetailsCard.dataset.currentStatus = status;
+                document.querySelector('.call-details-card h2').textContent = `${status} Call Details`;
             }
 
             // Update the showCallDetails function
