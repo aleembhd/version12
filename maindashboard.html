@@ -560,6 +560,46 @@
             // Implementation to update the call summary numbers in the UI
             // This function should recalculate and update the totals for each category
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalCallsCard = document.getElementById('totalCallsCard');
+            const notInterestedCard = document.querySelector('.notinterestedcard');
+            const unansweredCard = document.querySelector('.unanswredcalls');
+            const callbackCard = document.getElementById('callbackCard');
+            const interestedCard = document.getElementById('interestedCard');
+            const callDetailsCard = document.getElementById('callDetailsCard');
+
+            function toggleCallDetails(status) {
+                if (callDetailsCard.style.display === 'none' || callDetailsCard.getAttribute('data-status') !== status) {
+                    showCallDetails(status);
+                    callDetailsCard.style.display = 'block';
+                    callDetailsCard.setAttribute('data-status', status);
+                } else {
+                    callDetailsCard.style.display = 'none';
+                    callDetailsCard.setAttribute('data-status', '');
+                }
+            }
+
+            totalCallsCard.addEventListener('click', () => toggleCallDetails('Total'));
+            notInterestedCard.addEventListener('click', () => toggleCallDetails('Not Interested'));
+            unansweredCard.addEventListener('click', () => toggleCallDetails('Unanswered'));
+            callbackCard.addEventListener('click', () => toggleCallDetails('Callback'));
+            interestedCard.addEventListener('click', () => toggleCallDetails('Interested'));
+
+            // ... (keep the existing event listeners and functions)
+        });
+
+        // Update the showCallDetails function
+        function showCallDetails(status) {
+            // ... (keep the existing code)
+
+            document.querySelector('.call-details-card h2').textContent = `${status} Call Details`;
+            callDetailsCard.setAttribute('data-status', status);
+
+            // ... (keep the rest of the existing code)
+        }
+
+        // ... (keep all other existing functions)
     </script>
 </body>
 </html>
