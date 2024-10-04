@@ -201,39 +201,23 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const monthButtons = document.querySelectorAll('.month-btn');
-            const currentMonth = new Date().getMonth() + 1;
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentYear = currentDate.getFullYear();
             let cachedData = {};
 
-            monthButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const selectedMonth = button.dataset.month;
-                    fetchMonthData(selectedMonth);
-                    
-                    // Update active button immediately
-                    monthButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                });
-            });
-
-            // Set current month as active and fetch its data
-            const currentMonthButton = document.querySelector(`.month-btn[data-month="${currentMonth}"]`);
-            if (currentMonthButton) {
-                currentMonthButton.classList.add('active');
-                fetchMonthData(currentMonth);
-            }
-
-            function fetchMonthData(month) {
+            // Function to fetch and display data for the given month
+            function fetchAndDisplayMonthData(month, year) {
                 // Show loading indicator
                 document.getElementById('currentMonth').textContent = 'Loading...';
 
-                if (cachedData[month]) {
-                    updateDashboard(cachedData[month], month);
+                if (cachedData[`${year}-${month}`]) {
+                    updateDashboard(cachedData[`${year}-${month}`], month, year);
                     return;
                 }
 
-                const currentYear = new Date().getFullYear();
-                const startDate = new Date(currentYear, month - 1, 1).getTime();
-                const endDate = new Date(currentYear, month, 0).getTime();
+                const startDate = new Date(year, month - 1, 1).getTime();
+                const endDate = new Date(year, month, 0).getTime();
 
                 database.ref('calls')
                     .orderByChild('timestamp')
@@ -246,21 +230,41 @@
                             monthData.push(childSnapshot.val());
                         });
                         
-                        cachedData[month] = monthData;
-                        updateDashboard(monthData, month);
+                        cachedData[`${year}-${month}`] = monthData;
+                        updateDashboard(monthData, month, year);
                     })
                     .catch((error) => {
                         console.error("Error fetching month data:", error);
-                        updateDashboard([], month); // Update with empty data in case of error
+                        updateDashboard([], month, year); // Update with empty data in case of error
                     });
             }
 
-            function updateDashboard(data, month) {
+            // Fetch current month's data on page load
+            fetchAndDisplayMonthData(currentMonth, currentYear);
+
+            // Update active button for current month
+            const currentMonthButton = document.querySelector(`.month-btn[data-month="${currentMonth}"]`);
+            if (currentMonthButton) {
+                currentMonthButton.classList.add('active');
+            }
+
+            // Add click event listeners to month buttons
+            monthButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const selectedMonth = parseInt(button.dataset.month);
+                    fetchAndDisplayMonthData(selectedMonth, currentYear);
+                    
+                    // Update active button
+                    monthButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                });
+            });
+
+            function updateDashboard(data, month, year) {
                 const monthNames = ["January", "February", "March", "April", "May", "June",
                                     "July", "August", "September", "October", "November", "December"];
-                const currentYear = new Date().getFullYear();
 
-                document.getElementById('currentMonth').textContent = `${monthNames[month - 1]} ${currentYear}`;
+                document.getElementById('currentMonth').textContent = `${monthNames[month - 1]} ${year}`;
 
                 // Always update summary cards, show 0 if no data
                 document.getElementById('totalCallsSummary').textContent = data.length || '0';
