@@ -223,7 +223,9 @@
         </div>
     </div>
 
-   
+    <div class="floating-image" id="dialpadTrigger">
+        <img src="images/telephone.png" alt="Floating Image">
+    </div>
 
     <div class="calendar-container" id="calendarContainer">
         <div class="calendar-content">
@@ -262,11 +264,11 @@
                 window.todayCalls = todayCalls; // Store calls for later use
             }
 
-            // Add event listeners for summary cards
+            // Modify the addClickListener function
             const addClickListener = (id, status) => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('click', () => showCallDetails(status));
+                    element.addEventListener('click', () => toggleCallDetails(status));
                 } else {
                     console.error(`Element with id '${id}' not found`);
                 }
@@ -277,6 +279,24 @@
             addClickListener('unansweredCallsSummary', 'Unanswered');
             addClickListener('callbackCard', 'Callback');
             addClickListener('interestedCard', 'Interested');
+
+            // Add a variable to keep track of the currently displayed status
+            let currentDisplayedStatus = null;
+
+            // Function to toggle call details
+            function toggleCallDetails(status) {
+                const callDetailsCard = document.getElementById('callDetailsCard');
+                
+                if (currentDisplayedStatus === status) {
+                    // If the same status is clicked again, hide the details
+                    callDetailsCard.style.display = 'none';
+                    currentDisplayedStatus = null;
+                } else {
+                    // Show details for the new status
+                    showCallDetails(status);
+                    currentDisplayedStatus = status;
+                }
+            }
 
             // Function to show call details
             function showCallDetails(status) {
